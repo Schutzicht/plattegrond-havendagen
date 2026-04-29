@@ -1,0 +1,21 @@
+# Dev artifacts (regeneratable, don't bloat repo)
+07-16HAVEN_PlattegrondTijdschema.pdf.png
+contact-sheet.png
+icons-debug.png
+icons-detected.json
+hotspots-icons.json
+crops/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Python
+__pycache__/
+*.pyc

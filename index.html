@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="Interactieve plattegrond Havendagen Zierikzee — bekijk alle podia, foodstands en activiteiten.">
+  <title>Plattegrond — Havendagen Zierikzee</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="title-block">
+        <h1>Havendagen Zierikzee</h1>
+        <p class="subtitle">Interactieve plattegrond — klik of hover op een onderdeel</p>
+      </div>
+      <div class="filter-block" role="toolbar" aria-label="Dagfilter">
+        <span class="filter-label">Toon:</span>
+        <button class="day-btn is-active" data-day="all">Alle dagen</button>
+        <button class="day-btn" data-day="do">Donderdag</button>
+        <button class="day-btn" data-day="vr">Vrijdag</button>
+        <button class="day-btn" data-day="za">Zaterdag</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="legend" aria-label="Legenda">
+      <span class="legend-item" data-cat="food"><span class="dot dot-food"></span>Foodstand</span>
+      <span class="legend-item" data-cat="podium"><span class="dot dot-podium"></span>Podium / Plein</span>
+      <span class="legend-item" data-cat="activity"><span class="dot dot-activity"></span>Activiteit</span>
+      <span class="legend-item" data-cat="facility"><span class="dot dot-facility"></span>Voorziening</span>
+    </div>
+
+    <div class="map-wrapper">
+      <div class="map-scroll">
+        <div class="map" id="map">
+          <img src="plattegrond.png" alt="Plattegrond Havendagen Zierikzee" id="map-image">
+          <div class="hotspot-layer" id="hotspot-layer"></div>
+        </div>
+      </div>
+      <p class="scroll-hint" aria-hidden="true">↔ Sleep / scroll om de hele plattegrond te bekijken</p>
+    </div>
+  </main>
+
+  <!-- Floating tooltip (desktop hover) -->
+  <div class="tooltip" id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+  <!-- Modal (click / mobile) -->
+  <div class="modal-backdrop" id="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal-close" id="modal-close" aria-label="Sluiten">&times;</button>
+      <div class="modal-header">
+        <span class="cat-badge" id="modal-cat"></span>
+        <h2 id="modal-title"></h2>
+      </div>
+      <div class="modal-days" id="modal-days"></div>
+      <p class="modal-desc" id="modal-desc"></p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
