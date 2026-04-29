@@ -238,6 +238,156 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !backdrop.hidden) closeModal();
 });
 
+/* ---------- Zoom & pan (pinch on touch, wheel on desktop, buttons everywhere) ---------- */
+class MapZoom {
+  constructor(viewport, content) {
+    this.viewport = viewport;
+    this.content  = content;
+    this.scale    = 1;
+    this.x        = 0;
+    this.y        = 0;
+    this.minScale = 1;
+    this.maxScale = 6;
+    this.pointers = new Map();
+    this.lastPinchDist = 0;
+    this.lastPanX = 0;
+    this.lastPanY = 0;
+    this.didMove  = false;
+
+    viewport.addEventListener('pointerdown',  this.onDown);
+    viewport.addEventListener('pointermove',  this.onMove);
+    viewport.addEventListener('pointerup',    this.onUp);
+    viewport.addEventListener('pointercancel',this.onUp);
+    viewport.addEventListener('pointerleave', this.onUp);
+    viewport.addEventListener('wheel',        this.onWheel, { passive: false });
+    viewport.addEventListener('dblclick',     this.onDoubleClick);
+    // Suppress hotspot click if the user actually dragged
+    viewport.addEventListener('click', e => {
+      if (this.didMove) {
+        e.stopPropagation();
+        e.preventDefault();
+        this.didMove = false;
+      }
+    }, true);
+  }
+
+  onDown = (e) => {
+    if (e.target.closest('.zoom-controls')) return; // don't grab buttons
+    this.viewport.setPointerCapture(e.pointerId);
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    this.didMove = false;
+    if (this.pointers.size === 1) {
+      this.lastPanX = e.clientX;
+      this.lastPanY = e.clientY;
+    } else if (this.pointers.size === 2) {
+      const [p1, p2] = [...this.pointers.values()];
+      this.lastPinchDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    }
+  };
+
+  onMove = (e) => {
+    if (!this.pointers.has(e.pointerId)) return;
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (this.pointers.size === 2) {
+      const [p1, p2] = [...this.pointers.values()];
+      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      if (this.lastPinchDist > 0) {
+        const factor = dist / this.lastPinchDist;
+        this.zoomAt((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, factor);
+      }
+      this.lastPinchDist = dist;
+      this.didMove = true;
+    } else if (this.pointers.size === 1 && this.scale > this.minScale + 0.01) {
+      const dx = e.clientX - this.lastPanX;
+      const dy = e.clientY - this.lastPanY;
+      if (Math.abs(dx) + Math.abs(dy) > 4) this.didMove = true;
+      this.x += dx;
+      this.y += dy;
+      this.lastPanX = e.clientX;
+      this.lastPanY = e.clientY;
+      this.clamp();
+      this.apply();
+    }
+  };
+
+  onUp = (e) => {
+    this.pointers.delete(e.pointerId);
+    if (this.pointers.size < 2) this.lastPinchDist = 0;
+  };
+
+  onWheel = (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.18 : 1 / 1.18;
+    this.zoomAt(e.clientX, e.clientY, factor);
+  };
+
+  onDoubleClick = (e) => {
+    if (e.target.closest('.zoom-controls')) return;
+    if (e.target.closest('.hotspot')) return; // let hotspot clicks behave normally
+    e.preventDefault();
+    const factor = this.scale < this.maxScale - 0.4 ? 1.9 : this.minScale / this.scale;
+    this.zoomAt(e.clientX, e.clientY, factor, true);
+  };
+
+  zoomAt(clientX, clientY, factor, animate = false) {
+    const newScale = Math.max(this.minScale, Math.min(this.maxScale, this.scale * factor));
+    const realFactor = newScale / this.scale;
+    const rect = this.viewport.getBoundingClientRect();
+    const px = clientX - rect.left;
+    const py = clientY - rect.top;
+    this.x = px - (px - this.x) * realFactor;
+    this.y = py - (py - this.y) * realFactor;
+    this.scale = newScale;
+    this.clamp();
+    this.apply(animate);
+  }
+
+  clamp() {
+    const rect = this.viewport.getBoundingClientRect();
+    const contentW = this.content.offsetWidth * this.scale;
+    const contentH = this.content.offsetHeight * this.scale;
+    if (contentW <= rect.width)  this.x = (rect.width  - contentW) / 2;
+    else                         this.x = Math.min(0, Math.max(rect.width  - contentW, this.x));
+    if (contentH <= rect.height) this.y = (rect.height - contentH) / 2;
+    else                         this.y = Math.min(0, Math.max(rect.height - contentH, this.y));
+  }
+
+  apply(animate = false) {
+    if (animate) {
+      this.content.classList.add('is-animating');
+      setTimeout(() => this.content.classList.remove('is-animating'), 240);
+    }
+    this.content.style.transform = `translate(${this.x}px, ${this.y}px) scale(${this.scale})`;
+    this.viewport.classList.toggle('is-zoomed', this.scale > this.minScale + 0.01);
+  }
+
+  buttonZoom(direction) {
+    const rect = this.viewport.getBoundingClientRect();
+    const factor = direction === 'in' ? 1.5 : 1 / 1.5;
+    this.zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, factor, true);
+  }
+
+  reset() {
+    this.scale = this.minScale;
+    this.x = 0;
+    this.y = 0;
+    this.clamp();
+    this.apply(true);
+  }
+}
+
+const mapZoom = new MapZoom(
+  document.getElementById('map-viewport'),
+  document.getElementById('map')
+);
+document.getElementById('zoom-in').addEventListener('click',    () => mapZoom.buttonZoom('in'));
+document.getElementById('zoom-out').addEventListener('click',   () => mapZoom.buttonZoom('out'));
+document.getElementById('zoom-reset').addEventListener('click', () => mapZoom.reset());
+
+// Re-clamp on resize so the map stays fitted
+window.addEventListener('resize', () => { mapZoom.clamp(); mapZoom.apply(); });
+
 /* ---------- Day filter ---------- */
 const dayBtns = document.querySelectorAll('.day-btn');
 let activeDay = 'all';

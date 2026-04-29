@@ -117,34 +117,72 @@ body {
   margin: 0 auto 2rem;
   padding: 0 1.25rem;
 }
-.map-scroll {
+.map-viewport {
+  position: relative;
   background: var(--c-surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-md);
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+  touch-action: none; /* let our JS handle pan/pinch */
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: grab;
 }
+.map-viewport:active { cursor: grabbing; }
+.map-viewport.is-zoomed { cursor: grab; }
 .map {
   position: relative;
-  /* Image natural ratio is 2337x954 -> ~2.45:1 */
-  min-width: 900px; /* ensure horizontal scroll on small screens */
   width: 100%;
   display: block;
   line-height: 0;
+  transform-origin: 0 0;
+  will-change: transform;
 }
+.map.is-animating { transition: transform 220ms cubic-bezier(.2, .8, .25, 1); }
 #map-image {
   display: block;
   width: 100%;
   height: auto;
   user-select: none;
   -webkit-user-drag: none;
+  pointer-events: none; /* clicks go through to hotspots */
 }
 .hotspot-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
+
+/* Zoom controls */
+.zoom-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+}
+.zoom-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--c-ink);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), transform var(--transition);
+  touch-action: manipulation;
+}
+.zoom-btn:hover  { background: #fff; transform: translateY(-1px); }
+.zoom-btn:active { transform: translateY(0); }
+.zoom-btn:focus-visible { outline: 2px solid var(--c-orange); outline-offset: 2px; }
 
 /* ---------- Hotspots ---------- */
 .hotspot {
@@ -328,16 +366,14 @@ body {
 }
 
 /* ---------- Responsive ---------- */
-@media (min-width: 720px) {
-  .scroll-hint { display: none; }
-}
-
 @media (max-width: 540px) {
   .site-header { padding: 1rem; }
   .header-inner { flex-direction: column; align-items: flex-start; }
   .filter-block { width: 100%; }
   .legend { font-size: 0.82rem; gap: 0.4rem 0.9rem; }
   .modal { padding: 1.25rem 1.1rem 1rem; }
+  .scroll-hint { font-size: 0.75rem; }
+  .zoom-btn { width: 44px; height: 44px; }
 }
 
 /* On touch devices: hide hover tooltip, rely on modal */

@@ -33,13 +33,18 @@
     </div>
 
     <div class="map-wrapper">
-      <div class="map-scroll">
+      <div class="map-viewport" id="map-viewport">
         <div class="map" id="map">
-          <img src="plattegrond.png" alt="Plattegrond Havendagen Zierikzee" id="map-image">
+          <img src="plattegrond.png" alt="Plattegrond Havendagen Zierikzee" id="map-image" draggable="false">
           <div class="hotspot-layer" id="hotspot-layer"></div>
         </div>
+        <div class="zoom-controls" role="group" aria-label="Zoom">
+          <button class="zoom-btn" id="zoom-in"  aria-label="Inzoomen">+</button>
+          <button class="zoom-btn" id="zoom-out" aria-label="Uitzoomen">−</button>
+          <button class="zoom-btn" id="zoom-reset" aria-label="Reset zoom" title="Reset">⟲</button>
+        </div>
       </div>
-      <p class="scroll-hint" aria-hidden="true">↔ Sleep / scroll om de hele plattegrond te bekijken</p>
+      <p class="scroll-hint" aria-hidden="true">Knijpen om in te zoomen · sleep om te bewegen · dubbeltik om in te zoomen</p>
     </div>
   </main>
 
