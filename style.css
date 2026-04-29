@@ -117,35 +117,29 @@ body {
   margin: 0 auto 2rem;
   padding: 0 1.25rem;
 }
-.map-viewport {
+.map-scroll {
   position: relative;
   background: var(--c-surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-md);
-  overflow: hidden;
-  touch-action: none; /* let our JS handle pan/pinch */
-  -webkit-user-select: none;
-  user-select: none;
-  cursor: grab;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
-.map-viewport:active { cursor: grabbing; }
-.map-viewport.is-zoomed { cursor: grab; }
 .map {
   position: relative;
+  /* Image natural ratio is 2337x954 -> ~2.45:1 */
+  min-width: 1100px; /* keep map readable on small screens via horizontal scroll */
   width: 100%;
   display: block;
   line-height: 0;
-  transform-origin: 0 0;
-  will-change: transform;
 }
-.map.is-animating { transition: transform 220ms cubic-bezier(.2, .8, .25, 1); }
 #map-image {
   display: block;
   width: 100%;
   height: auto;
   user-select: none;
   -webkit-user-drag: none;
-  pointer-events: none; /* clicks go through to hotspots */
 }
 .hotspot-layer {
   position: absolute;
@@ -153,36 +147,103 @@ body {
   pointer-events: none;
 }
 
-/* Zoom controls */
-.zoom-controls {
+/* Fullscreen toggle button — sits over the map's top-right corner */
+.map-wrapper { position: relative; }
+.fullscreen-btn {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  z-index: 100;
-}
-.zoom-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  top: 10px;
+  right: calc(1.25rem + 10px); /* offset for map-wrapper padding */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.7rem;
   border: 0;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.95);
   color: var(--c-ink);
-  font-size: 1.2rem;
-  font-weight: 700;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: background var(--transition), transform var(--transition);
+  z-index: 100;
   touch-action: manipulation;
 }
-.zoom-btn:hover  { background: #fff; transform: translateY(-1px); }
-.zoom-btn:active { transform: translateY(0); }
-.zoom-btn:focus-visible { outline: 2px solid var(--c-orange); outline-offset: 2px; }
+.fullscreen-btn:hover  { background: #fff; transform: translateY(-1px); }
+.fullscreen-btn:active { transform: translateY(0); }
+.fullscreen-btn:focus-visible { outline: 2px solid var(--c-orange); outline-offset: 2px; }
+.fullscreen-btn svg { display: block; }
+
+/* In-fullscreen view: map fills viewport, button switches to "exit" */
+.is-fullscreen #map-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--c-ink);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+.is-fullscreen .map-scroll {
+  flex: 1;
+  height: 100vh;
+  border-radius: 0;
+  background: var(--c-ink);
+  display: flex;
+  align-items: center;
+}
+.is-fullscreen .map {
+  /* On portrait mobile we let the map be much wider so user can scroll */
+  min-width: 1400px;
+  width: auto;
+  margin: auto;
+}
+.is-fullscreen #map-image { height: auto; }
+.is-fullscreen .scroll-hint,
+.is-fullscreen .rotate-hint { display: none; }
+.is-fullscreen .fullscreen-btn-label { display: none; }
+.is-fullscreen .fullscreen-btn {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 10000;
+  padding: 0.55rem;
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+}
+/* Larger map on bigger fullscreen viewports */
+@media (min-width: 1024px) {
+  .is-fullscreen .map { min-width: 0; width: 100%; max-width: 2400px; }
+}
+
+/* Rotate hint (only visible on portrait mobile in fullscreen) */
+.rotate-hint {
+  display: none;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--c-ink-soft);
+  margin: 0.4rem 0 0;
+  font-weight: 500;
+}
+@media (max-width: 768px) and (orientation: portrait) {
+  .rotate-hint { display: block; }
+  .is-fullscreen .rotate-hint {
+    display: block;
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    z-index: 10000;
+  }
+}
 
 /* ---------- Hotspots ---------- */
 .hotspot {
@@ -366,6 +427,10 @@ body {
 }
 
 /* ---------- Responsive ---------- */
+@media (min-width: 1100px) {
+  .scroll-hint { display: none; }
+}
+
 @media (max-width: 540px) {
   .site-header { padding: 1rem; }
   .header-inner { flex-direction: column; align-items: flex-start; }
